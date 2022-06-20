@@ -5,6 +5,9 @@
 <launch>
     <!-- TODO: Add parameter for simulation -->
 
+    <node pkg="hovermower_wrapper" type="hovermower_wrapper" name="mower_comms">
+        
+    </node>
     
     <include file="$(find open_mower)/launch/include/_gps.launch">
         <arg name="serial_port" value="ttyACM0"/>
