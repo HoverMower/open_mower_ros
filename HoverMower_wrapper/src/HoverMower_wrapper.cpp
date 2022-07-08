@@ -17,6 +17,10 @@
 //
 #include "ros/ros.h"
 #include "std_msgs/Bool.h"
+#include "geographic_msgs/GeoPose.h"
+#include "geometry_msgs/Quaternion.h"
+#include "sensor_msgs/NavSatFix.h"
+#include "sensor_msgs/Imu.h"
 #include <mower_msgs/Status.h>
 #include "rosmower_msgs/Battery.h"
 #include "rosmower_msgs/MowMotor.h"
@@ -24,12 +28,16 @@
 //#include "<mower_msgs/HighLevelControlSrv.h>"
 #include "mower_msgs/MowerControlSrv.h"
 #include "mower_msgs/EmergencyStopSrv.h"
+#include "robot_localization/SetDatum.h"
 
 ros::Publisher status_pub;
 ros::Publisher estop_pub;
 ros::Subscriber battery_sub;
 ros::Subscriber mow_motor_sub;
+ros::Subscriber gps_fix_sub;
+ros::Subscriber imu_sub;
 ros::ServiceClient srv_mow;
+ros::ServiceClient srv_gps_datum;
 
 // True, if ROS thinks there sould be an emergency
 bool emergency_high_level = false;
@@ -38,6 +46,9 @@ bool emergency_low_level = false;
 
 // True, if the LL emergency should be cleared in the next request
 bool ll_clear_emergency = false;
+
+// true, if gps datum has been provided to robot_localization
+bool gps_datum_provided = false;
 
 // Current speeds
 float speed_mow = 0;
@@ -48,6 +59,7 @@ ros::ServiceClient highLevelClient;
 
 rosmower_msgs::Battery last_battery_msg;
 rosmower_msgs::MowMotor last_mow_msg;
+sensor_msgs::Imu last_imu;
 
 bool is_emergency()
 {
@@ -63,6 +75,36 @@ void mowMotorCallback(const rosmower_msgs::MowMotor::ConstPtr &msg)
 {
     last_mow_msg = *msg;
     emergency_low_level = msg->alarm;
+}
+
+void imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
+{
+    last_imu = *msg;
+}
+
+void gpsFixCallback(const sensor_msgs::NavSatFix::ConstPtr &msg)
+{
+    if (gps_datum_provided == false)
+    {
+        if (msg->status.status > 0)
+        {
+            geographic_msgs::GeoPose gps_datum;
+            
+            robot_localization::SetDatum srv;
+
+            gps_datum.position.latitude = msg->latitude;
+            gps_datum.position.longitude = msg->longitude;
+            gps_datum.position.altitude = msg->altitude;
+
+            gps_datum.orientation = last_imu.orientation;
+
+            srv.request.geo_pose = gps_datum;
+            srv_gps_datum.call(srv);
+
+            ROS_INFO_STREAM("Setting gps start position");
+            gps_datum_provided = true;
+        }
+    }
 }
 
 void convertStatus(rosmower_msgs::MowMotor &mow_status, mower_msgs::ESCStatus &ros_esc_status)
@@ -229,9 +271,14 @@ int main(int argc, char **argv)
     estop_pub = nh.advertise<std_msgs::Bool>("/e_stop", 3);
     battery_sub = nh.subscribe("hovermower/sensors/Battery", 1000, batteryCallback);
     mow_motor_sub = nh.subscribe("hovermower/sensors/MowMotor", 1000, mowMotorCallback);
+    gps_fix_sub = nh.subscribe("/ublox/fix", 1000, gpsFixCallback);
+    imu_sub = nh.subscribe("bno08x/raw", 1000, imuCallback);
+
     ros::ServiceServer mow_service = nh.advertiseService("mower_service/mow_enabled", setMowEnabled);
     ros::ServiceServer emergency_service = nh.advertiseService("mower_service/emergency", setEmergencyStop);
     srv_mow = nh.serviceClient<rosmower_msgs::setMowMotor>("hovermower/setMowMotorSpeed");
+    srv_gps_datum = nh.serviceClient<robot_localization::SetDatum>("datum");
+
     ros::Timer publish_timer = nh.createTimer(ros::Duration(0.02), publishActuatorsTimerTask);
 
     ros::AsyncSpinner spinner(1);

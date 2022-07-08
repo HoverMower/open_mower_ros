@@ -10,6 +10,9 @@ project(hovermower_wrapper)
 find_package(catkin REQUIRED COMPONENTS
   mower_msgs
   rosmower_msgs
+  sensor_msgs
+  geographic_msgs
+  robot_localization
   roscpp
  # serial
   #      vesc_driver

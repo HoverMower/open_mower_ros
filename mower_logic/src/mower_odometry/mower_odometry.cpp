@@ -187,8 +187,8 @@ void handleGPSUpdate(tf2::Vector3 gps_pos, double gps_accuracy_m) {
 
         // calculate current base_link position from orientation and distance parameter
 
-      //  double base_link_x = gps_pos.x() - config.gps_antenna_offset * cos(r);
-      //  double base_link_y = gps_pos.y() - config.gps_antenna_offset * sin(r);
+        double base_link_x = gps_pos.x() - config.gps_antenna_offset * cos(r);
+        double base_link_y = gps_pos.y() - config.gps_antenna_offset * sin(r);
 
 
         // store the gps as last
@@ -202,8 +202,8 @@ void handleGPSUpdate(tf2::Vector3 gps_pos, double gps_accuracy_m) {
             ROS_INFO_STREAM("GPS data now valid");
             ROS_INFO_STREAM("First GPS data, moving odometry to " << base_link_x << ", " << base_link_y);
             // we don't even have gps yet, set odometry to first estimate
-           // x = base_link_x;
-           // y = base_link_y;
+            x = base_link_x;
+            y = base_link_y;
             gpsOdometryValid = true;
         } else if (gpsOdometryValid) {
             // gps was valid before, we apply the filter
