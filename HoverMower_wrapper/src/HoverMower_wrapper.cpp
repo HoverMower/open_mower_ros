@@ -271,7 +271,7 @@ int main(int argc, char **argv)
     estop_pub = nh.advertise<std_msgs::Bool>("/e_stop", 3);
     battery_sub = nh.subscribe("hovermower/sensors/Battery", 1000, batteryCallback);
     mow_motor_sub = nh.subscribe("hovermower/sensors/MowMotor", 1000, mowMotorCallback);
-    gps_fix_sub = nh.subscribe("/ublox/fix", 1000, gpsFixCallback);
+    //gps_fix_sub = nh.subscribe("/ublox/fix", 1000, gpsFixCallback);
     imu_sub = nh.subscribe("bno08x/raw", 1000, imuCallback);
 
     ros::ServiceServer mow_service = nh.advertiseService("mower_service/mow_enabled", setMowEnabled);
