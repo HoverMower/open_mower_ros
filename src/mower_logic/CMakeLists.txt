@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(hovermower_wrapper)
+project(mower_logic)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,19 +8,26 @@ project(hovermower_wrapper)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  dynamic_reconfigure
+  ftc_local_planner
+  mbf_msgs
+  mower_map
   mower_msgs
-  rosmower_msgs
-  sensor_msgs
-  geographic_msgs
-  robot_localization
+  nav_msgs
   roscpp
- # serial
-  #      vesc_driver
+  slic3r_coverage_planner
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+        sensor_msgs
+        robot_localization
 )
 
-find_package(
-        Boost
-)
+
+
+# Geographiclib installs FindGeographicLib.cmake to this non-standard location
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
+find_package(GeographicLib REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -79,7 +86,7 @@ find_package(
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   mower_msgs
+#   mbf_msgs#   mower_msgs#   nav_msgs#   tf2_geometry_msgs
 # )
 
 ################################################
@@ -97,10 +104,10 @@ find_package(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+ generate_dynamic_reconfigure_options(
+         cfg/MowerLogic.cfg
+         cfg/MowerOdometry.cfg
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -113,9 +120,10 @@ find_package(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES mower_comms
-#  CATKIN_DEPENDS mower_msgs roscpp serial
+#  LIBRARIES mower_logic
+#  CATKIN_DEPENDS dynamic_reconfigure ftc_local_planner mbf_msgs mower_map mower_msgs nav_msgs roscpp slic3r_coverage_planner tf2 tf2_geometry_msgs tf2_ros
 #  DEPENDS system_lib
+        DEPENDS GeographicLib
 )
 
 ###########
@@ -125,14 +133,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
-  include/open_mower_ros
+# include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/mower_comms.cpp
+#   src/${PROJECT_NAME}/mower_logic.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -143,7 +150,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/mower_comms_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/mower_logic_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -160,11 +167,31 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(${PROJECT_NAME} 
-        src/HoverMower_wrapper.cpp
+add_executable(mower_logic
+        src/mower_logic/mower_logic.cpp
+        src/mower_logic/behaviors/Behavior.h
+        src/mower_logic/behaviors/DockingBehavior.h
+        src/mower_logic/behaviors/DockingBehavior.cpp
+        src/mower_logic/behaviors/UndockingBehavior.h
+        src/mower_logic/behaviors/UndockingBehavior.cpp
+        src/mower_logic/behaviors/IdleBehavior.h
+        src/mower_logic/behaviors/IdleBehavior.cpp
+        src/mower_logic/behaviors/MowingBehavior.h
+        src/mower_logic/behaviors/MowingBehavior.cpp
+        src/mower_logic/behaviors/AreaRecordingBehavior.h
+        src/mower_logic/behaviors/AreaRecordingBehavior.cpp
         )
+add_dependencies(mower_logic ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(mower_logic ${catkin_LIBRARIES})
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_executable(mower_odometry src/mower_odometry/mower_odometry.cpp)
+add_dependencies(mower_odometry ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(mower_odometry ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
+
+add_executable(mag_calibration src/mag_calibration/mag_calibration.cpp)
+add_dependencies(mag_calibration ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(mag_calibration ${catkin_LIBRARIES} ${GeographicLib_LIBRARIES})
+
 
 #############
 ## Install ##
@@ -213,7 +240,7 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_mower_comms.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_mower_logic.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

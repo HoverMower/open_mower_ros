@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(hovermower_wrapper)
+project(mower_comms)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -9,13 +9,10 @@ project(hovermower_wrapper)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   mower_msgs
-  rosmower_msgs
-  sensor_msgs
-  geographic_msgs
-  robot_localization
+        sensor_msgs
   roscpp
- # serial
-  #      vesc_driver
+  serial
+        vesc_driver
 )
 
 find_package(
@@ -125,8 +122,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
-  include/open_mower_ros
+# include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -160,11 +156,14 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(${PROJECT_NAME} 
-        src/HoverMower_wrapper.cpp
+add_executable(mower_comms
+        src/mower_comms.cpp
+        src/COBS.h
+        src/ll_datatypes.h
         )
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(mower_comms ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(mower_comms ${catkin_LIBRARIES})
 
 #############
 ## Install ##
