@@ -195,7 +195,7 @@ void AreaRecordingBehavior::joy_received(const sensor_msgs::Joy &joy_msg) {
         poly_recording_enabled = !poly_recording_enabled;
     }
     // Y + up was pressed, we finish the recording for a navigation area
-    if ((joy_msg.buttons[3] && joy_msg.axes[7] > 0.5) && !(last_joy.buttons[3] && last_joy.axes[7] > 0.5)) {
+    if ((joy_msg.buttons[3] && joy_msg.axes[1] > 0.5) && !(last_joy.buttons[3] && last_joy.axes[1] > 0.5)) {
         ROS_INFO_STREAM("Y + UP PRESSED, recording navigation area");
         // stop current poly recording
         poly_recording_enabled = false;
@@ -205,7 +205,7 @@ void AreaRecordingBehavior::joy_received(const sensor_msgs::Joy &joy_msg) {
         finished_all = true;
     }
     // Y + down was pressed, we finish the recording for a navigation area
-    if ((joy_msg.buttons[3] && joy_msg.axes[7] < -0.5) && !(last_joy.buttons[3] && last_joy.axes[7] < -0.5)) {
+    if ((joy_msg.buttons[3] && joy_msg.axes[1] < -0.5) && !(last_joy.buttons[3] && last_joy.axes[1] < -0.5)) {
         ROS_INFO_STREAM("Y + DOWN PRESSED, recording mowing area");
         // stop current poly recording
         poly_recording_enabled = false;
