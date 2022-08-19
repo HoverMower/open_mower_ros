@@ -347,8 +347,13 @@ int main(int argc, char **argv)
 
     ros::AsyncSpinner spinner(1);
     spinner.start();
+
+    ros::Rate rate(100.0);
+    
     while (ros::ok())
     {
+
+        rate.sleep();
     }
 
     spinner.stop();
