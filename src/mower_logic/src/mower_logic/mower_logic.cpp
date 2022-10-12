@@ -188,7 +188,7 @@ void checkSafety(const ros::TimerEvent &timer_event) {
                                                                                << last_status.right_esc_status);
         return;
     }
-    bool gpsGood = last_odom.pose.covariance[0] < 0.07 && last_odom.pose.covariance[0] > 0;
+    bool gpsGood = last_odom.pose.covariance[0] < 0.15 && last_odom.pose.covariance[0] > 0;
     if (gpsGood || last_config.ignore_gps_errors) {
         last_good_gps = ros::Time::now();
     }
