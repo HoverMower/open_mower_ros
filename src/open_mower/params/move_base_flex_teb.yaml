@@ -7,6 +7,7 @@ controllers:
     type: ftc_local_planner/FTCPlanner
   - name: DockingFTCPlanner
     type: ftc_local_planner/FTCPlanner
+  #- name: FTCPlanner
   - name: TebPlanner
     type: teb_local_planner/TebLocalPlannerROS
 

@@ -417,7 +417,7 @@ int main(int argc, char **argv) {
         return 3;
     }
 
-    ROS_INFO("Waiting for mowing path progress server");
+  /*  ROS_INFO("Waiting for mowing path progress server");
     if (!pathProgressClient.waitForExistence(ros::Duration(60.0, 0.0))) {
         ROS_ERROR("FTCLocalPlanner progress server not found.");
         delete (reconfigServer);
@@ -425,7 +425,7 @@ int main(int argc, char **argv) {
         delete (mbfClientExePath);
         return 3;
     }
-
+*/
     ROS_INFO("Got all servers, we can mow");
 
 

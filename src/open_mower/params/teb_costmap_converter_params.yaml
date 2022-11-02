@@ -1,4 +1,5 @@
 TebLocalPlannerROS:
+#FTCPlanner:
 
   ## Costmap converter plugin   
   costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
