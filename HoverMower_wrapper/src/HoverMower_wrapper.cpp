@@ -26,6 +26,7 @@
 #include "rosmower_msgs/Battery.h"
 #include "rosmower_msgs/MowMotor.h"
 #include "rosmower_msgs/setMowMotor.h"
+#include "rosmower_msgs/pressSwitch.h"
 //#include "<mower_msgs/HighLevelControlSrv.h>"
 #include "mower_msgs/MowerControlSrv.h"
 #include "mower_msgs/EmergencyStopSrv.h"
@@ -44,6 +45,7 @@ ros::Subscriber gps_fix_sub;
 ros::Subscriber imu_sub;
 ros::ServiceClient srv_mow;
 ros::ServiceClient srv_gps_datum;
+ros::ServiceClient srv_pressSwitch;
 
 // True, if ROS thinks there sould be an emergency
 bool emergency_high_level = false;
@@ -57,6 +59,8 @@ bool ll_clear_emergency = false;
 bool gps_datum_provided = false;
 
 bool last_hb_connected = false;
+// how often to restart Hoverboard before giving up
+int hb_reconnect_attemps = 0;
 
 // Current speeds
 float speed_mow = 0;
@@ -97,25 +101,25 @@ void hoverboardConnectedCallback(const std_msgs::Bool::ConstPtr &msg)
 void leftMotorCallback(const std_msgs::Float64::ConstPtr &msg)
 {
     last_leftMotor_msg = *msg;
-    //emergency_low_level = msg->alarm;
+    // emergency_low_level = msg->alarm;
 }
 
 void rightMotorCallback(const std_msgs::Float64::ConstPtr &msg)
 {
     last_rightMotor_msg = *msg;
-    //emergency_low_level = msg->alarm;
+    // emergency_low_level = msg->alarm;
 }
 
 void rightMotorVelCallback(const std_msgs::Float64::ConstPtr &msg)
 {
     last_rightMotor_vel = *msg;
-    //emergency_low_level = msg->alarm;
+    // emergency_low_level = msg->alarm;
 }
 
 void leftMotorVelCallback(const std_msgs::Float64::ConstPtr &msg)
 {
     last_leftMotor_vel = *msg;
-    //emergency_low_level = msg->alarm;
+    // emergency_low_level = msg->alarm;
 }
 
 void imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
@@ -130,7 +134,7 @@ void gpsFixCallback(const sensor_msgs::NavSatFix::ConstPtr &msg)
         if (msg->status.status > 0)
         {
             geographic_msgs::GeoPose gps_datum;
-            
+
             robot_localization::SetDatum srv;
 
             gps_datum.position.latitude = msg->latitude;
@@ -173,13 +177,26 @@ void convertDriveStatus(std_msgs::Float64 &dc_current, std_msgs::Float64 &veloci
 {
     if (abs(dc_current.data) > 2.0 || last_hb_connected == false)
     {
-        // ESC has a fault
-        ros_esc_status.status = mower_msgs::ESCStatus::ESC_STATUS_ERROR;
+        // check if we already tried to restart Hoverboard
+        if (hb_reconnect_attemps > 10)
+        {
+            // ESC has a fault
+            ros_esc_status.status = mower_msgs::ESCStatus::ESC_STATUS_ERROR;
+        }
+        else
+        {
+            // reconnect Hoverboard
+            hb_reconnect_attemps++;
+            rosmower_msgs::pressSwitch srv;
+            srv.request.switch_id = 3;
+            srv_pressSwitch.call(srv);
+        }
     }
     else
     {
         // ESC is OK but standing still
         ros_esc_status.status = mower_msgs::ESCStatus::ESC_STATUS_OK;
+        hb_reconnect_attemps = 0;
     }
     ros_esc_status.tacho = velocity.data;
     ros_esc_status.current = dc_current.data;
@@ -189,35 +206,6 @@ void publishStatus()
 {
     mower_msgs::Status status_msg;
     status_msg.stamp = ros::Time::now();
-
-    // if (last_ll_status.status_bitmask & 1) {
-    // LL OK, fill the message
-    //     status_msg.mower_status = mower_msgs::Status::MOWER_STATUS_OK;
-    // } else {
-    // LL initializing
-    //     status_msg.mower_status = mower_msgs::Status::MOWER_STATUS_INITIALIZING;
-    // }
-
-    // status_msg.raspberry_pi_power = (last_ll_status.status_bitmask & 0b00000010) != 0;
-    // status_msg.gps_power = (last_ll_status.status_bitmask & 0b00000100) != 0;
-    // status_msg.esc_power = (last_ll_status.status_bitmask & 0b00001000) != 0;
-    // status_msg.rain_detected = (last_ll_status.status_bitmask & 0b00010000) != 0;
-    // status_msg.sound_module_available = (last_ll_status.status_bitmask & 0b00100000) != 0;
-    // status_msg.sound_module_busy = (last_ll_status.status_bitmask & 0b01000000) != 0;
-    // status_msg.ui_board_available = (last_ll_status.status_bitmask & 0b10000000) != 0;
-
-    // for (uint8_t i = 0; i < 5; i++) {
-    //    status_msg.ultrasonic_ranges[i] = last_ll_status.uss_ranges_m[i];
-    //}
-
-    // overwrite emergency with the LL value.
-    // emergency_low_level = last_ll_status.emergency_bitmask > 0;
-    // if (!emergency_low_level) {
-    // it obviously worked, reset the request
-    //    ll_clear_emergency = false;
-    //} else {
-    //    ROS_ERROR_STREAM_THROTTLE(1, "Low Level Emergency. Bitmask was: " << (int)last_ll_status.emergency_bitmask);
-    //}
 
     // True, if high or low level emergency condition is present
     status_msg.emergency = is_emergency();
@@ -281,39 +269,6 @@ bool setEmergencyStop(mower_msgs::EmergencyStopSrvRequest &req, mower_msgs::Emer
     return true;
 }
 
-// void handleLowLevelUIEvent(struct ui_command *ui_command) {
-//     ROS_INFO_STREAM("Got UI button with code:" << ui_command->cmd1);
-
-//     mower_msgs::HighLevelControlSrv srv;
-
-//     switch(ui_command->cmd1) {
-//         case 2:
-//             // Home
-//             srv.request.command = mower_msgs::HighLevelControlSrvRequest::COMMAND_HOME;
-//             break;
-//         case 3:
-//             // Play
-//             srv.request.command = mower_msgs::HighLevelControlSrvRequest::COMMAND_START;
-//             break;
-//         case 4:
-//             // S1
-//             srv.request.command = mower_msgs::HighLevelControlSrvRequest::COMMAND_S1;
-//             break;
-//         case 5:
-//             // S2
-//             srv.request.command = mower_msgs::HighLevelControlSrvRequest::COMMAND_S2;
-//             break;
-//         default:
-//             // Return, don't call the service.
-//             return;
-//     }
-
-//     if(!highLevelClient.call(srv)) {
-//         ROS_ERROR_STREAM("Error calling high level control service");
-//     }
-
-// }
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "HoverMower_wrapper");
@@ -335,11 +290,13 @@ int main(int argc, char **argv)
     right_motor_vel_sub = nh.subscribe("/hoverboard/right_wheel/velocity", 100, rightMotorVelCallback);
     left_motor_sub = nh.subscribe("/hoverboard/left_wheel/dc_current", 100, leftMotorCallback);
     right_motor_sub = nh.subscribe("/hoverboard/right_wheel/dc_current", 100, rightMotorCallback);
-    //gps_fix_sub = nh.subscribe("/ublox/fix", 1000, gpsFixCallback);
+    // gps_fix_sub = nh.subscribe("/ublox/fix", 1000, gpsFixCallback);
     imu_sub = nh.subscribe("bno08x/raw", 1000, imuCallback);
 
     ros::ServiceServer mow_service = nh.advertiseService("mower_service/mow_enabled", setMowEnabled);
     ros::ServiceServer emergency_service = nh.advertiseService("mower_service/emergency", setEmergencyStop);
+    // Service Clients
+    srv_pressSwitch = nh.serviceClient<rosmower_msgs::pressSwitch>("hovermower/pressSwitch");
     srv_mow = nh.serviceClient<rosmower_msgs::setMowMotor>("hovermower/setMowMotorSpeed");
     srv_gps_datum = nh.serviceClient<robot_localization::SetDatum>("datum");
 
@@ -349,13 +306,12 @@ int main(int argc, char **argv)
     spinner.start();
 
     ros::Rate rate(100.0);
-    
+
     while (ros::ok())
     {
 
         rate.sleep();
     }
-
     spinner.stop();
     return 0;
 }
