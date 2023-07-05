@@ -34,6 +34,4 @@
         </node>   
 
         <rosparam file="$(find open_mower)/params/twist_mux_topics.yaml"  command="load"/>
-    </node>
-
 </launch>
