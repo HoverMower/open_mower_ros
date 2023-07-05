@@ -6,7 +6,7 @@
 export OM_MOWER="HoverMower"
 
 # Set to true to record your session
-# export OM_ENABLE_RECORDING=False
+# export OM_ENABLE_RECORDING=True
 
 # Offset between the point in between your wheels and the GPS antenna in m
 #export OM_GPS_ANTENNA_OFFSET=0.3
@@ -80,8 +80,8 @@ export OM_ENABLE_MOWER=true
 export OM_AUTOMATIC_START=false
 
 export OM_OUTLINE_OFFSET=0.05
-export OM_OUTLINE_COUNT=4
-export OM_TOOL_WIDTH=0.13
+export OM_OUTLINE_COUNT=3
+export OM_TOOL_WIDTH=0.15
 
 export OM_DOCKING_DISTANCE=1.0
 export OM_UNDOCK_DISTANCE=2.0

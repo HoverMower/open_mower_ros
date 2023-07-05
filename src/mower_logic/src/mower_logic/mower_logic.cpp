@@ -188,7 +188,7 @@ void checkSafety(const ros::TimerEvent &timer_event) {
                                                                                << last_status.right_esc_status);
         return;
     }
-    bool gpsGood = last_odom.pose.covariance[0] < 0.05 && last_odom.pose.covariance[0] > 0;
+    bool gpsGood = last_odom.pose.covariance[0] < 0.15 && last_odom.pose.covariance[0] > 0;
     if (gpsGood || last_config.ignore_gps_errors) {
         last_good_gps = ros::Time::now();
     }
@@ -417,7 +417,7 @@ int main(int argc, char **argv) {
         return 3;
     }
 
-    ROS_INFO("Waiting for mowing path progress server");
+  /*  ROS_INFO("Waiting for mowing path progress server");
     if (!pathProgressClient.waitForExistence(ros::Duration(60.0, 0.0))) {
         ROS_ERROR("FTCLocalPlanner progress server not found.");
         delete (reconfigServer);
@@ -425,7 +425,7 @@ int main(int argc, char **argv) {
         delete (mbfClientExePath);
         return 3;
     }
-
+*/
     ROS_INFO("Got all servers, we can mow");
 
 

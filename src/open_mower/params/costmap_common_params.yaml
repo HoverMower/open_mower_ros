@@ -1,6 +1,7 @@
 obstacle_range: 2.5  # max Distance to object to get marked as obstacle
 raytrace_range: 3.0  # max distance to get accounted as free space
-footprint: [[ 0.45,  0.2], [-0.15,  0.2], [-0.15, -0.2], [ 0.45, -0.2]]
+#footprint: [[ 0.45,  0.2], [-0.15,  0.2], [-0.15, -0.2], [ 0.45, -0.2]]
+footprint: [[ 0.35,  0.15], [-0.1,  0.15], [-0.10, -0.15], [ 0.35, -0.15]]
 
 max_obstacle_height: 1.0
 

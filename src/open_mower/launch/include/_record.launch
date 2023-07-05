@@ -11,9 +11,15 @@
 /tf
 /tf_static
 /joy
+/logic_vel
 /hoverboard_velocity_controller/cmd_vel
 /bno08x/raw
+/imu
 /ublox/navrelposned
 /ublox/navstatus
-/ublox/fix " />
+/ublox/fix 
+/ublox_odometry
+/cmd_vel
+/odometry/fixed
+/odometry/filtered_map" />
 </launch>
