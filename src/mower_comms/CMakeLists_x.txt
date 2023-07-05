@@ -12,7 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
   roscpp
   serial
-        vesc_driver
+        xesc_driver
+        xesc_msgs
+        xesc_interface
+        xbot_msgs
 )
 
 find_package(

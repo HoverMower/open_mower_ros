@@ -1,4 +1,7 @@
 # ROS Workspace
+
+[![Build](https://github.com/ClemensElflein/open_mower_ros/actions/workflows/build-image.yaml/badge.svg)](https://github.com/ClemensElflein/open_mower_ros/actions/workflows/build-image.yaml)
+
 This folder is the ROS workspace, which should be used to build the OpenMower ROS software.
 This repository contains the ROS package for controlling the OpenMower.
 
@@ -53,7 +56,7 @@ roslaunch open_mower open_mower.launch
 Before you launch `open_mower` package, env vars with configuration have to be set.
 
 ```bash
-cp src/open_mower/open_mower/config/mower_config.sh.example mower_config.sh
+cp src/open_mower/config/mower_config.sh.example mower_config.sh
 source mower_config.sh # it's expected to adjust the file
 ```
 
@@ -79,7 +82,7 @@ nohup <your_absolute_path_to_clion>/clion.sh >/dev/null 2>&1 &
 
 Then, open the `src` directory. CLion will prompt with the following screen:
 
-![CLion CMake Settings](./clion_cmake_settings.png)
+![CLion CMake Settings](./img/clion_cmake_settings.png)
 
 Copy the settings for **Build directory** and **CMake options**. Everything else can stay the same. This is all you need!
 
@@ -91,3 +94,4 @@ Copy the settings for **Build directory** and **CMake options**. Everything else
 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
 
 Feel free to use the design in your private/educational projects, but don't try to sell the design or products based on it without getting my consent first. The idea here is to share knowledge, not to enable others to simply sell my work. Thank you for understanding.
+

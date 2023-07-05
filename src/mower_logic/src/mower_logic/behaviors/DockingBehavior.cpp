@@ -19,10 +19,9 @@
 extern ros::ServiceClient dockingPointClient;
 extern actionlib::SimpleActionClient<mbf_msgs::MoveBaseAction> *mbfClient;
 extern actionlib::SimpleActionClient<mbf_msgs::ExePathAction> *mbfClientExePath;
-extern mower_msgs::Status last_status;
+extern mower_msgs::Status getStatus();
 
-extern void stop();
-
+extern void stopMoving();
 extern bool setGPS(bool enabled);
 
 DockingBehavior DockingBehavior::INSTANCE;
@@ -120,7 +119,16 @@ bool DockingBehavior::dock_straight() {
 
         r.sleep();
 
+        const auto last_status = getStatus();
         auto mbfState = mbfClientExePath->getState();
+
+        if(aborted) {
+            ROS_INFO_STREAM("Docking aborted.");
+            mbfClientExePath->cancelGoal();
+            stopMoving();
+            dockingSuccess = false;
+            waitingForResult = false;
+        }
 
         switch (mbfState.state_) {
             case actionlib::SimpleClientGoalState::ACTIVE:
@@ -129,7 +137,7 @@ bool DockingBehavior::dock_straight() {
                 if (last_status.v_charge > 5.0) {
                     ROS_INFO_STREAM("Got a voltage of " << last_status.v_charge << " V. Cancelling docking.");
                     mbfClientExePath->cancelGoal();
-                    stop();
+                    stopMoving();
                     dockingSuccess = true;
                     waitingForResult = false;
                 }
@@ -142,7 +150,7 @@ bool DockingBehavior::dock_straight() {
                 if (last_status.v_charge > 5.0) {
                     mbfClientExePath->cancelGoal();
                     dockingSuccess = true;
-                    stop();
+                    stopMoving();
                 }
                 waitingForResult = false;
                 break;
@@ -150,13 +158,13 @@ bool DockingBehavior::dock_straight() {
                 ROS_WARN_STREAM("Some error during path execution. Docking failed. status value was: "
                                         << mbfState.state_);
                 waitingForResult = false;
-                stop();
+                stopMoving();
                 break;
         }
     }
 
     // to be safe if the planner sent additional commands after cancel
-    stop();
+    stopMoving();
 
     return dockingSuccess;
 }
@@ -167,6 +175,18 @@ std::string DockingBehavior::state_name() {
 
 Behavior *DockingBehavior::execute() {
 
+    // Check if already docked (e.g. carried to base during emergency) and skip
+    if(getStatus().v_charge > 5.0) {
+        ROS_INFO_STREAM("Already inside docking station, going directly to idle.");
+        stopMoving();
+        return &IdleBehavior::INSTANCE;
+    }
+
+    while(!isGPSGood){
+        ROS_WARN_STREAM("Waiting for good GPS");
+        ros::Duration(1.0).sleep();
+    }
+
     bool approachSuccess = approach_docking_point();
 
     if (!approachSuccess) {
@@ -174,13 +194,16 @@ Behavior *DockingBehavior::execute() {
 
         retryCount++;
         if(retryCount <= config.docking_retry_count) {
-            ROS_ERROR("Retrying docking");
-            return &UndockingBehavior::RETRY_INSTANCE;
+            ROS_ERROR("Retrying docking approach");
+            return &DockingBehavior::INSTANCE;
         }
 
         ROS_ERROR("Giving up on docking");
         return &IdleBehavior::INSTANCE;
     }
+
+    // Reset retryCount
+    reset();
 
     // Disable GPS
     inApproachMode = false;
@@ -192,7 +215,7 @@ Behavior *DockingBehavior::execute() {
         ROS_ERROR("Error during docking.");
 
         retryCount++;
-        if(retryCount <= config.docking_retry_count) {
+        if(retryCount <= config.docking_retry_count && !aborted) {
             ROS_ERROR_STREAM("Retrying docking. Try " << retryCount << " / " << config.docking_retry_count);
             return &UndockingBehavior::RETRY_INSTANCE;
         }
@@ -205,6 +228,7 @@ Behavior *DockingBehavior::execute() {
 }
 
 void DockingBehavior::enter() {
+    paused = aborted = false;
     // start with target approach and then dock later
     inApproachMode = true;
 
@@ -254,4 +278,16 @@ bool DockingBehavior::redirect_joystick() {
     return false;
 }
 
+
+uint8_t DockingBehavior::get_sub_state() {
+    return 1;
+
+}
+uint8_t DockingBehavior::get_state() {
+    return mower_msgs::HighLevelStatus::HIGH_LEVEL_STATE_AUTONOMOUS;
+}
+
+void DockingBehavior::handle_action(std::string action) {
+
+}
 

@@ -22,12 +22,18 @@
 #include <dynamic_reconfigure/server.h>
 #include "mower_map/GetMowingAreaSrv.h"
 #include "AreaRecordingBehavior.h"
+#include <mower_map/GetDockingPointSrv.h>
+#include "xbot_msgs/ActionInfo.h"
 
 class IdleBehavior : public Behavior {
 private:
     bool manual_start_mowing = false;
     bool start_area_recorder = false;
+    std::vector<xbot_msgs::ActionInfo> actions;
+
 public:
+    IdleBehavior();
+
     static IdleBehavior INSTANCE;
 
     std::string state_name() override;
@@ -53,6 +59,12 @@ public:
     void command_s2() override;
 
     bool redirect_joystick() override;
+
+    uint8_t get_sub_state() override;
+
+    uint8_t get_state() override;
+
+    void handle_action(std::string action) override;
 };
 
 
