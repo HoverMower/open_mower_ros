@@ -18,10 +18,12 @@
 
 extern ros::ServiceClient dockingPointClient;
 extern actionlib::SimpleActionClient<mbf_msgs::ExePathAction> *mbfClientExePath;
-extern nav_msgs::Odometry last_odom;
+extern xbot_msgs::AbsolutePose getPose();
+extern mower_msgs::Status getStatus();
 
-extern void stop();
-
+extern void setRobotPose(geometry_msgs::Pose &pose);
+extern void stopMoving();
+extern bool isGpsGood();
 extern bool setGPS(bool enabled);
 
 UndockingBehavior UndockingBehavior::INSTANCE(&MowingBehavior::INSTANCE);
@@ -34,9 +36,9 @@ std::string UndockingBehavior::state_name() {
 Behavior *UndockingBehavior::execute() {
 
     // get robot's current pose from odometry.
-    nav_msgs::Odometry odom = last_odom;
+    xbot_msgs::AbsolutePose pose = getPose();
     tf2::Quaternion quat;
-    tf2::fromMsg(odom.pose.pose.orientation, quat);
+    tf2::fromMsg(pose.pose.pose.orientation, quat);
     tf2::Matrix3x3 m(quat);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
@@ -50,8 +52,8 @@ Behavior *UndockingBehavior::execute() {
     int undock_point_count = config.undock_distance * 10.0;
     for (int i = 0; i < undock_point_count; i++) {
         geometry_msgs::PoseStamped docking_pose_stamped_front;
-        docking_pose_stamped_front.pose = odom.pose.pose;
-        docking_pose_stamped_front.header = odom.header;
+        docking_pose_stamped_front.pose = pose.pose.pose;
+        docking_pose_stamped_front.header = pose.header;
         docking_pose_stamped_front.pose.position.x -= cos(yaw) * (i / 10.0);
         docking_pose_stamped_front.pose.position.y -= sin(yaw) * (i / 10.0);
         path.poses.push_back(docking_pose_stamped_front);
@@ -68,11 +70,11 @@ Behavior *UndockingBehavior::execute() {
     bool success = result.state_ == actionlib::SimpleClientGoalState::SUCCEEDED;
 
     // stop the bot for now
-    stop();
+    stopMoving();
 
     if (!success) {
         ROS_ERROR_STREAM("Error during undock");
-        return nullptr;
+        return &IdleBehavior::INSTANCE;
     }
 
 
@@ -81,7 +83,7 @@ Behavior *UndockingBehavior::execute() {
 
     if (!hasGps) {
         ROS_ERROR_STREAM("Could not get GPS.");
-        return nullptr;
+        return &IdleBehavior::INSTANCE;
     }
 
     // TODO return mow area
@@ -91,6 +93,7 @@ Behavior *UndockingBehavior::execute() {
 
 void UndockingBehavior::enter() {
     reset();
+    paused = aborted = false;
 
     // Get the docking pose in map
     mower_map::GetDockingPointSrv get_docking_point_srv;
@@ -98,6 +101,12 @@ void UndockingBehavior::enter() {
     docking_pose_stamped.pose = get_docking_point_srv.response.docking_pose;
     docking_pose_stamped.header.frame_id = "map";
     docking_pose_stamped.header.stamp = ros::Time::now();
+
+    // set the robot's position to the dock if we're actually docked
+    if(getStatus().v_charge > 5.0) {
+        ROS_INFO_STREAM("Currently inside the docking station, we set the robot's pose to the docks pose.");
+        setRobotPose(docking_pose_stamped.pose);
+    }
 }
 
 void UndockingBehavior::exit() {
@@ -121,16 +130,16 @@ bool UndockingBehavior::waitForGPS() {
     gpsRequired = false;
     setGPS(true);
     ros::Rate odom_rate(1.0);
-    while (ros::ok()) {
-        if (last_odom.pose.covariance[0] < 0.15) {
+    while (ros::ok() && !aborted) {
+        if (isGpsGood()) {
             ROS_INFO("Got good gps, let's go");
             break;
         } else {
-            ROS_INFO_STREAM("waiting for gps. current covariance: " << last_odom.pose.covariance[0]);
+            ROS_INFO_STREAM("waiting for gps. current accuracy: " << getPose().position_accuracy);
             odom_rate.sleep();
         }
     }
-    if (!ros::ok()) {
+    if (!ros::ok() || aborted) {
         return false;
     }
 
@@ -165,4 +174,16 @@ void UndockingBehavior::command_s2() {
 
 bool UndockingBehavior::redirect_joystick() {
     return false;
+}
+
+
+uint8_t UndockingBehavior::get_sub_state() {
+    return 2;
+
+}
+uint8_t UndockingBehavior::get_state() {
+    return mower_msgs::HighLevelStatus::HIGH_LEVEL_STATE_AUTONOMOUS;
+}
+
+void UndockingBehavior::handle_action(std::string action) {
 }

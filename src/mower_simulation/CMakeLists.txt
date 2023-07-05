@@ -14,6 +14,11 @@ find_package(catkin REQUIRED COMPONENTS
         tf2_ros
         dynamic_reconfigure
         mower_msgs
+        mower_map
+        rosbridge_server
+        mower_map
+        xbot_msgs
+        xbot_positioning
         )
 
 ## System dependencies are found with CMake's conventions
