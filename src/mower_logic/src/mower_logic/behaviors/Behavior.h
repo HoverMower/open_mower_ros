@@ -19,6 +19,19 @@
 
 #include "ros/ros.h"
 #include "mower_logic/MowerLogicConfig.h"
+#include "mower_msgs/HighLevelStatus.h"
+#include <atomic>
+#include <memory>
+
+enum eAutoMode {
+    MANUAL = 0,
+    SEMIAUTO = 1,
+    AUTO = 2
+};
+
+struct sSharedState {
+    bool active_semiautomatic_task;
+};
 
 /**
  * Behavior definition
@@ -27,14 +40,23 @@ class Behavior {
 
 private:
     ros::Time startTime;
+
 protected:
-    bool paused;
+    std::atomic<bool> aborted;
+    std::atomic<bool> paused;
+
+    std::atomic<bool> requested_continue_flag;
+    std::atomic<bool> requested_pause_flag;
+
+    std::atomic<bool> isGPSGood;
+    std::atomic<uint8_t> sub_state;
 
     double time_in_state() {
         return (ros::Time::now() - startTime).toSec();
     }
 
     mower_logic::MowerLogicConfig config;
+    std::shared_ptr<sSharedState> shared_state;
 
     /**
      * Called ONCE on state enter.
@@ -44,12 +66,56 @@ protected:
 public:
 
     virtual std::string state_name() = 0;
+    virtual std::string sub_state_name() {
+        return "";
+    }
 
-    void start(mower_logic::MowerLogicConfig &c) {
-        ROS_INFO_STREAM("Entered state: " << state_name());
+    bool hasGoodGPS()
+    {
+        return isGPSGood;
+    }
+
+    void setGoodGPS(bool isGood) {
+        isGPSGood = isGood;
+    }
+
+    void requestContinue()
+    {
+        requested_continue_flag = true;
+    }
+
+    void requestPause()
+    {
+        requested_pause_flag = true;
+    }
+
+    void setPause()
+    {
+        paused = true;
+    }
+
+    void setContinue()
+    {
         paused = false;
+        requested_continue_flag = false;
+        requested_pause_flag = false;
+    }
+
+    void start(mower_logic::MowerLogicConfig &c, std::shared_ptr<sSharedState> s) {
+        ROS_INFO_STREAM("");
+        ROS_INFO_STREAM("");
+        ROS_INFO_STREAM("--------------------------------------");
+        ROS_INFO_STREAM("- Entered state: " << state_name());
+        ROS_INFO_STREAM("--------------------------------------");
+        aborted = false;
+        paused = false;
+        requested_continue_flag = false;
+        requested_pause_flag = false;
         this->config = c;
+        this->shared_state = std::move(s);
         startTime = ros::Time::now();
+        isGPSGood = false;
+        sub_state = 0;
         enter();
     }
 
@@ -73,12 +139,15 @@ public:
      * If called, save state internally and return the execute() method asap.
      * Execution should resume on the next execute() call.
      */
-    void pause() {
-        paused = true;
+    void abort() {
+        if(!aborted) {
+            ROS_INFO_STREAM( "- Behaviour.h: abort() called");
+        }
+        aborted = true;
     }
 
     // Return true, if this state needs absolute positioning.
-    // The state will be paused if GPS is lost and resumed at some later point in time.
+    // The state will be aborted if GPS is lost and resumed at some later point in time.
     virtual bool needs_gps() = 0;
 
     // return true, if the mower motor should currently be running.
@@ -92,6 +161,11 @@ public:
     virtual void command_start() = 0;
     virtual void command_s1() = 0;
     virtual void command_s2() = 0;
+
+    virtual uint8_t get_sub_state() = 0;
+    virtual uint8_t get_state() = 0;
+
+    virtual void handle_action(std::string action) = 0;
 };
 
 #endif //SRC_BEHAVIOR_H
