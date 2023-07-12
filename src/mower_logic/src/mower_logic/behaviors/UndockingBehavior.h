@@ -27,6 +27,7 @@
 #include <tf2/LinearMath/Transform.h>
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "MowingBehavior.h"
+								   
 
 
 class UndockingBehavior : public Behavior {
@@ -67,6 +68,12 @@ public:
     void command_s2() override;
 
     bool redirect_joystick() override;
+
+    uint8_t get_sub_state() override;
+
+    uint8_t get_state() override;
+
+    void handle_action(std::string action) override;
 };
 
 
