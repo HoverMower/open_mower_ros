@@ -38,23 +38,36 @@
 #include "mower_map/AddMowingAreaSrv.h"
 #include "mower_map/SetDockingPointSrv.h"
 #include "mower_msgs/EmergencyStopSrv.h"
+								   
+#include "xbot_msgs/ActionInfo.h"
 
 #include "geometry_msgs/Twist.h"
+
+#include "std_msgs/Bool.h"
+#include "xbot_msgs/MapOverlay.h"
 
 class AreaRecordingBehavior : public Behavior {
 public:
     static AreaRecordingBehavior INSTANCE;
+
+    AreaRecordingBehavior();
+
 private:
 
     bool has_odom = false;
 
+    std::vector<xbot_msgs::ActionInfo> actions;
+
     sensor_msgs::Joy last_joy;
     nav_msgs::Odometry last_odom;
 
+    ros::Publisher map_overlay_pub;
     ros::Publisher marker_pub;
     ros::Publisher marker_array_pub;
 
     ros::Subscriber joy_sub, odom_sub;
+
+    ros::Subscriber dock_sub, polygon_sub, mow_area_sub, nav_area_sub;
 
     ros::ServiceClient add_mowing_area_client, set_docking_point_client;
 
@@ -66,20 +79,31 @@ private:
 
     // true, if all polys were recorded and the complete area is finished
     bool is_mowing_area = false;
+    bool is_navigation_area = false;
     bool finished_all = false;
     bool set_docking_position = false;
+    bool has_outline = false;
 
     visualization_msgs::MarkerArray markers;
     visualization_msgs::Marker marker;
 
 private:
-    bool recordNewPolygon(geometry_msgs::Polygon &polygon);
+    bool recordNewPolygon(geometry_msgs::Polygon &polygon, xbot_msgs::MapOverlay &resultOverlay);
     bool getDockingPosition(geometry_msgs::Pose &pos);
+																	 
     void joy_received(const sensor_msgs::Joy &joy_msg);
     void odom_received(const nav_msgs::Odometry &odom_msg);
+    void record_dock_received(std_msgs::Bool state_msg);
+    void record_polygon_received(std_msgs::Bool state_msg);
+    void record_mowing_received(std_msgs::Bool state_msg);
+    void record_navigation_received(std_msgs::Bool state_msg);
+
+    void update_actions();
 
 public:
     std::string state_name() override;
+
+    std::string sub_state_name() override;
 
     Behavior *execute() override;
 
@@ -102,8 +126,13 @@ public:
     void command_s2() override;
 
     bool redirect_joystick() override;
+
+    uint8_t get_sub_state() override;
+
+    uint8_t get_state() override;
+
+    void handle_action(std::string action) override;
 };
 
 
 #endif //SRC_AREA_RECORDING_BEHAVIOR_H
-
