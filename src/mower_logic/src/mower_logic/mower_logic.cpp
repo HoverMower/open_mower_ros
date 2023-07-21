@@ -121,10 +121,11 @@ void setConfig(mower_logic::MowerLogicConfig c)
     reconfigServer->updateConfig(c);
 }
 
-xbot_msgs::AbsolutePose getPose()
+//xbot_msgs::AbsolutePose getPose()
+nav_msgs::Odometry getPose()
 {
     std::lock_guard<std::recursive_mutex> lk{mower_logic_mutex};
-    return last_pose;
+    return last_odom;
 } 
 
 void setEmergencyMode(bool emergency);
@@ -154,7 +155,7 @@ void setRobotPose(geometry_msgs::Pose &pose)
     // set the robot pose internally as well. othwerise we need to wait for xbot_positioning to send a new one once it has updated the internal pose.
     {
         std::lock_guard<std::recursive_mutex> lk{mower_logic_mutex};
-        last_pose.pose.pose = pose;
+        last_odom.pose.pose = pose;
     }
 
     xbot_positioning::SetPoseSrv pose_srv;
@@ -387,7 +388,9 @@ bool isGpsGood()
     std::lock_guard<std::recursive_mutex> lk{mower_logic_mutex};
     // GPS is good if orientation is valid, we have low accuracy and we have a recent GPS update.
     // TODO: think about the "recent gps flag" since it only looks at the time. E.g. if we were standing still this would still pause even if no GPS updates are needed during standstill.
-    return last_pose.orientation_valid && last_pose.position_accuracy < last_config.max_position_accuracy && (last_pose.flags & xbot_msgs::AbsolutePose::FLAG_SENSOR_FUSION_RECENT_ABSOLUTE_POSE);
+    //return last_pose.orientation_valid && last_pose.position_accuracy < last_config.max_position_accuracy && (last_pose.flags & xbot_msgs::AbsolutePose::FLAG_SENSOR_FUSION_RECENT_ABSOLUTE_POSE);
+    bool gpsGood = last_odom.pose.covariance[0] < 0.15 && last_odom.pose.covariance[0] > 0;
+    return gpsGood;
 }
 
 /// @brief Called every 0.5s, used to control BLADE motor via mower_enabled variable and stop any movement in case of /odom and /mower/status outages
@@ -396,7 +399,7 @@ void checkSafety(const ros::TimerEvent &timer_event)
 {
     const auto last_status = getStatus();
     const auto last_config = getConfig();
-    const auto last_pose = getPose();
+    const auto last_odom = getPose();
     const auto pose_time = getPoseTime();
     const auto status_time = getStatusTime();
     const auto last_good_gps = getLastGoodGPS();
@@ -457,18 +460,18 @@ void checkSafety(const ros::TimerEvent &timer_event)
     if (gpsGoodNow || last_config.ignore_gps_errors)
     {
         setLastGoodGPS(ros::Time::now());
-        high_level_status.gps_quality_percent = 1.0 - fmin(1.0, last_pose.position_accuracy / last_config.max_position_accuracy);
-        ROS_INFO_STREAM_THROTTLE(10, "GPS quality: " << high_level_status.gps_quality_percent);
+       // high_level_status.gps_quality_percent = 1.0 - fmin(1.0, last_pose.position_accuracy / last_config.max_position_accuracy);
+       // ROS_INFO_STREAM_THROTTLE(10, "GPS quality: " << high_level_status.gps_quality_percent);
     }
     else
     {
         // GPS = bad, set quality to 0
         high_level_status.gps_quality_percent = 0;
-        if (last_pose.orientation_valid)
-        {
+       // if (last_pose.orientation_valid)
+       // {
             // set this if we don't even have an orientation
-            high_level_status.gps_quality_percent = -1;
-        }
+       //     high_level_status.gps_quality_percent = -1;
+       // }
         ROS_WARN_STREAM_THROTTLE(1, "Low quality GPS");
     }
 
@@ -790,7 +793,7 @@ int main(int argc, char **argv)
         return 3;
     }
 
-    /*  ROS_INFO("Waiting for mowing path progress server");
+      ROS_INFO("Waiting for mowing path progress server");
     if (!pathProgressClient.waitForExistence(ros::Duration(60.0, 0.0))) {
         ROS_ERROR("FTCLocalPlanner progress server not found.");
         delete (reconfigServer);

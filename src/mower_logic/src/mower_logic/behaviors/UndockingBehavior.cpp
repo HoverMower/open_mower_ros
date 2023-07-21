@@ -19,9 +19,10 @@
 extern ros::ServiceClient dockingPointClient;
 extern actionlib::SimpleActionClient<mbf_msgs::ExePathAction> *mbfClientExePath;
 extern nav_msgs::Odometry last_odom;
+extern nav_msgs::Odometry getPose();
 extern mower_msgs::Status getStatus();
 
-extern void setRobotPose(geometry_msgs::Pose &pose);
+extern void setRobotPose(geometry_msgs::Pose &pose);    
 extern void stopMoving();
 extern bool isGpsGood();
 extern bool setGPS(bool enabled);
@@ -135,7 +136,7 @@ bool UndockingBehavior::waitForGPS() {
             ROS_INFO("Got good gps, let's go");
             break;
         } else {
-            ROS_INFO_STREAM("waiting for gps. current accuracy: " << getPose().position_accuracy);
+            ROS_INFO_STREAM("waiting for gps. current accuracy: " << getPose().pose.covariance[0]);
             odom_rate.sleep();
         }
     }

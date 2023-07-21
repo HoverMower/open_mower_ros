@@ -214,7 +214,7 @@ void AreaRecordingBehavior::exit() {
     polygon_sub.shutdown();
     mow_area_sub.shutdown();
     nav_area_sub.shutdown();
-    pose_sub.shutdown();
+    //pose_sub.shutdown();
     odom_sub.shutdown();
     add_mowing_area_client.shutdown();
     set_docking_point_client.shutdown();
