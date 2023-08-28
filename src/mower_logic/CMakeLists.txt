@@ -24,11 +24,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 
-
-# Geographiclib installs FindGeographicLib.cmake to this non-standard location
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/cmake/geographiclib/")
-find_package(GeographicLib REQUIRED)
-
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 

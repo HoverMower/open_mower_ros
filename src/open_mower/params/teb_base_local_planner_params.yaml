@@ -1,5 +1,5 @@
-TebLocalPlannerROS:
-#FTCPlanner:
+#TebLocalPlannerROS:
+FTCPlanner:
  odom_topic: odom
  map_frame: map
     
@@ -9,10 +9,10 @@ TebLocalPlannerROS:
  dt_ref: 0.3
  dt_hysteresis: 0.1
  global_plan_overwrite_orientation: False #True
- max_global_plan_lookahead_dist: 3.0
+ max_global_plan_lookahead_dist: 0.5
  feasibility_check_no_poses: 5
  allow_init_with_backwards_motion: True # allow backward movement at start to reach the goal (i.E. if behind robot)
-    
+ global_plan_prune_distance: 0.2   
  # Robot
          
  max_vel_x: 0.3
@@ -31,27 +31,27 @@ TebLocalPlannerROS:
    rear_offset: 0.2 # for type "two_circles"
    rear_radius: 0.2 # for type "two_circles"
  #  vertices: [ [0.25, -0.05], [0.18, -0.05], [0.18, -0.18], [-0.19, -0.18], [-0.25, 0], [-0.19, 0.18], [0.18, 0.18], [0.18, 0.05], [0.25, 0.05] ] # for type "polygon"   
-   vertices: [ [0.45, 0.2], [-0.15,  0.2], [-0.15, -0.2], [ 0.45, -0.2] ] # for type "polygon"
+   vertices: [ [0.30, 0.10], [-0.10,  10.0], [-0.10, -0.1], [ 0.30, -0.1] ] # for type "polygon"
  # GoalTolerance
     
- xy_goal_tolerance: 0.1
- yaw_goal_tolerance: 0.1
- free_goal_vel: False
+ xy_goal_tolerance: 0.2
+ yaw_goal_tolerance: 0.5
+ free_goal_vel: True
     
  # Obstacles
     
- min_obstacle_dist: 0.1
+ min_obstacle_dist: 0.01
  include_costmap_obstacles: True
- costmap_obstacles_behind_robot_dist: 1.0
- obstacle_poses_affected: 30
+ costmap_obstacles_behind_robot_dist: 0.5
+ obstacle_poses_affected: 10 #30
  costmap_converter_plugin: ""
  costmap_converter_spin_thread: True
  costmap_converter_rate: 5
 
  # Optimization
     
- no_inner_iterations: 5
- no_outer_iterations: 4
+ no_inner_iterations: 2 #5
+ no_outer_iterations: 2 #4
  optimization_activate: True
  optimization_verbose: False
  penalty_epsilon: 0.1
@@ -69,10 +69,10 @@ TebLocalPlannerROS:
 
  # Homotopy Class Planner
 
- enable_homotopy_class_planning: True
+ enable_homotopy_class_planning: False
  enable_multithreading: True
  simple_exploration: False
- max_number_classes: 4
+ max_number_classes: 2 #4
  roadmap_graph_no_samples: 15
  roadmap_graph_area_width: 5
  h_signature_prescaler: 0.5

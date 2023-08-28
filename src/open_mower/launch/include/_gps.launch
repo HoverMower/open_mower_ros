@@ -1,9 +1,6 @@
 
 <!--
-    This launch file sets up the RTK GPS. It assumes that str2str is installed on the host system.
-    The version used at the time of writing can be obtained using GIT:
-    URL: https://github.com/rtklibexplorer/RTKLIB
-    TAG: b34c
+    This launch file sets up the RTK GPS.
  -->
 <launch>
 
@@ -32,8 +29,5 @@
         <arg name="param_file_name" value="gps"/>
         <arg name="param_file_dir" value="$(find open_mower)/params"/>
     </include>
-
-
-
 
 </launch>

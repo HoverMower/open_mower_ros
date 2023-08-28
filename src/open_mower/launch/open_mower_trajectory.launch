@@ -7,7 +7,7 @@
     </include>
 
 -->
-<include file="$(find open_mower)/launch/include/_move_base_teb.launch"/> 
+<include file="$(find open_mower)/launch/include/_move_base_trajectory.launch"/> 
   <include file="$(find rosmower)/launch/robot_localization_wo_navsat.launch"/>
 <remap from="/mower/odom" to="odometry/filtered_map" />
 
@@ -24,8 +24,8 @@
         <param name="battery_full_voltage" value="$(env OM_BATTERY_FULL_VOLTAGE)"/>
     </node>
     <node pkg="slic3r_coverage_planner" type="slic3r_coverage_planner" name="slic3r_coverage_planner" output="screen">
-      <param name="doPerimeterClockwise" type="bool" value="true" />
-      <param name="equally_spaced_points" type="bool" value="false" /> 
+      <param name="clockwise" type="bool" value="true" />
+      <param name="equally_spaced" type="bool" value="false" /> 
     </node>
 
    

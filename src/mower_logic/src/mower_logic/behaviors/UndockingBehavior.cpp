@@ -72,7 +72,7 @@ Behavior *UndockingBehavior::execute() {
 
     if (!success) {
         ROS_ERROR_STREAM("Error during undock");
-        return nullptr;
+        return &IdleBehavior::INSTANCE;
     }
 
 
@@ -81,7 +81,7 @@ Behavior *UndockingBehavior::execute() {
 
     if (!hasGps) {
         ROS_ERROR_STREAM("Could not get GPS.");
-        return nullptr;
+        return &IdleBehavior::INSTANCE;
     }
 
     // TODO return mow area

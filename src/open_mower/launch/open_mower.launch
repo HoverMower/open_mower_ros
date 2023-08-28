@@ -2,6 +2,8 @@
   <!--  <include file="$(find open_mower)/launch/include/_comms.launch"/> 
     <include file="$(find open_mower)/launch/include/_move_base.launch"/>
     <include file="$(find rosmower)/launch/robot_localization.launch"/>
+    <include file="$(find open_mower)/launch/include/_localization.launch"/>
+    <include file="$(find open_mower)/launch/include/_teleop.launch"/>
     <include file="$(find open_mower)/launch/include/_record.launch">
         <arg name="prefix" value="mow_area"/>
     </include>
@@ -13,7 +15,7 @@
 
     <node pkg="mower_map" type="mower_map_service" name="map_service" output="screen"/>
     <node pkg="mower_logic" type="mower_logic" name="mower_logic" output="screen">
-        <param name="automatic_start" value="$(env OM_AUTOMATIC_START)"/>
+        <param name="automatic_mode" value="$(optenv OM_AUTOMATIC_MODE 0)"/>
         <param name="docking_distance" value="$(env OM_DOCKING_DISTANCE)"/>
         <param name="undock_distance" value="$(env OM_UNDOCK_DISTANCE)"/>
         <param name="tool_width" value="$(env OM_TOOL_WIDTH)"/>
@@ -21,12 +23,15 @@
         <param name="battery_empty_voltage" value="$(env OM_BATTERY_EMPTY_VOLTAGE)"/>
         <param name="outline_count" value="$(env OM_OUTLINE_COUNT)"/>
         <param name="outline_offset" value="$(env OM_OUTLINE_OFFSET)"/>
+        <param name="mow_angle_offset" value="$(optenv OM_MOWING_ANGLE_OFFSET 0)"/>
+        <param name="mow_angle_offset_is_absolute" value="$(optenv OM_MOWING_ANGLE_OFFSET_IS_ABSOLUTE False)"/>
         <param name="battery_full_voltage" value="$(env OM_BATTERY_FULL_VOLTAGE)"/>
+        <param name="motor_hot_temperature" value="$(env OM_MOWING_MOTOR_TEMP_HIGH)"/>
+        <param name="motor_cold_temperature" value="$(env OM_MOWING_MOTOR_TEMP_LOW)"/>
     </node>
     <node pkg="slic3r_coverage_planner" type="slic3r_coverage_planner" name="slic3r_coverage_planner" output="screen">
         <param name="clockwise" type="bool" value="true" />
-        </node>
+        </node>   
 
-   
-
+        <rosparam file="$(find open_mower)/params/twist_mux_topics.yaml"  command="load"/>
 </launch>

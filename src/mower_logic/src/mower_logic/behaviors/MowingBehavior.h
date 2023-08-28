@@ -24,18 +24,23 @@
 #include "slic3r_coverage_planner/Path.h"
 #include "ftc_local_planner/PlannerGetProgress.h"
 
+
 class MowingBehavior : public Behavior {
 
 private:
+ 
     bool skip_area;
     bool create_mowing_plan(int area_index);
 
     bool execute_mowing_plan();
+    bool execute_mowing_plan_single_targets();
 
     // Progress
     bool mowerEnabled = false;
     std::vector<slic3r_coverage_planner::Path> currentMowingPaths;
 
+    // single targets
+    bool execute_single_targets_ = true;
 
 public:
     static MowingBehavior INSTANCE;
