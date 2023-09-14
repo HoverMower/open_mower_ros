@@ -79,9 +79,9 @@ export OM_ENABLE_MOWER=true
 # True to start mowing automatically. If this is false, you need to start manually by pressing the start button
 export OM_AUTOMATIC_START=false
 
-export OM_OUTLINE_OFFSET=0.05
-export OM_OUTLINE_COUNT=3
+export OM_OUTLINE_OFFSET=0.55
+export OM_OUTLINE_COUNT=1
 export OM_TOOL_WIDTH=0.15
 
 export OM_DOCKING_DISTANCE=1.0
-export OM_UNDOCK_DISTANCE=2.0
+export OM_UNDOCK_DISTANCE=1.0
